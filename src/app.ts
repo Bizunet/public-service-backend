@@ -1,9 +1,22 @@
 import express, { type Express, type Request, type Response } from 'express';
+import 'dotenv/config';
+import cors from 'cors';
+
+import authRouter from './auth.js';
+
 
 const app: Express = express();
+app.use(cors({
+  origin: 'http://localhost:5173',
+}));
+app.use(express.json());
 
-app.get('/', (req: Request, res: Response) => {
+app.get('/', (_req: Request, res: Response) => {
   res.send('Hello World!');
 });
 
-app.listen(3000);
+app.use('/api/auth', authRouter);
+
+app.listen(3000,() => {
+  console.log('Server is running on http://localhost:3000');
+} );

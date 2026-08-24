@@ -1,0 +1,100 @@
+import { Router, type Request, type Response } from 'express';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import prisma from './prisma.js';
+
+const router = Router();
+
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+
+  if (!secret) {
+    throw new Error('JWT_SECRET is not defined');
+  }
+
+  return secret;
+}
+
+function createToken(userId: number) {
+  return jwt.sign({ userId }, getJwtSecret(), { expiresIn: '1d' });
+}
+
+router.post('/signup', async (req: Request, res: Response) => {
+  try {
+    const { fullName, email, employeeId, password } = req.body;
+
+    if (!fullName || !email || !employeeId || !password) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [{ email }, { employeeId }],
+      },
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        message: 'Email or employee ID is already registered',
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const user = await prisma.user.create({
+      data: {
+        name: fullName,
+        email,
+        employeeId,
+        password: passwordHash,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        employeeId: true,
+      },
+    });
+
+    return res.status(201).json({
+      user,
+      token: createToken(user.id),
+    });
+  } catch {
+    return res.status(500).json({ message: 'Unable to create account' });
+  }
+});
+
+router.post('/login', async (req: Request, res: Response) => {
+  try {
+    const { employeeId, password } = req.body;
+
+    if (!employeeId || !password) {
+      return res.status(400).json({
+        message: 'Employee ID and password are required',
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { employeeId },
+    });
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    return res.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        employeeId: user.employeeId,
+      },
+      token: createToken(user.id),
+    });
+  } catch {
+    return res.status(500).json({ message: 'Unable to log in' });
+  }
+});
+
+export default router;
