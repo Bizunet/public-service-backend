@@ -2,10 +2,12 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "nodenext",
+    "rootDir": ".",
+    "outDir": "dist",
     "rewriteRelativeImportExtensions": true,
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,
-    "noEmit": true,
+    "noEmit": false,
     "strict": true,
     "skipLibCheck": true
   }
