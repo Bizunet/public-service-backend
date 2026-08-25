@@ -4,6 +4,7 @@ import cors from 'cors';
 
 import authRouter from './auth.js';
 import contactRouter from './contact.ts';
+import reportsRouter from './reports.js';
 
 
 const app: Express = express();
@@ -18,6 +19,7 @@ app.get('/', (_req: Request, res: Response) => {
 
 app.use('/api/auth', authRouter);
 app.use('/api/contact', contactRouter);
+app.use('/api/reports', reportsRouter);
 
 app.listen(3000,() => {
   console.log('Server is running on http://localhost:3000');

@@ -18,6 +18,7 @@ model User {
   employeeId String @unique
   createdAt DateTime @default(now())
   password String
+  reports  Report[]
 }
 
 model ContactMessage {
@@ -28,4 +29,33 @@ model ContactMessage {
   subject   String
   message   String
   createdAt DateTime @default(now())
+}
+
+model Report {
+  id          Int          @id @default(autoincrement())
+  reference   String       @unique
+  reportType  String
+  fullName    String
+  employeeId  String
+  office      String
+  position    String
+  periodStart DateTime
+  periodEnd   DateTime
+  notes       String?
+  userId      Int
+  user        User         @relation(fields: [userId], references: [id])
+  files       ReportFile[]
+  createdAt   DateTime     @default(now())
+}
+
+model ReportFile {
+  id           Int      @id @default(autoincrement())
+  originalName String
+  storedName   String   @unique
+  mimeType     String
+  size         Int
+  path         String
+  reportId     Int
+  report       Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
 }

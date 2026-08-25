@@ -1,9 +1,41 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Request, type Response, type NextFunction } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import prisma from './prisma.js';
 
 const router = Router();
+
+export interface AuthenticatedRequest extends Request {
+  userId?: number;
+}
+
+export function requireAuth(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) {
+  const authorization = req.headers.authorization;
+  const token = authorization?.startsWith('Bearer ')
+    ? authorization.slice(7)
+    : undefined;
+
+  if (!token) {
+    return res.status(401).json({ message: 'Authentication is required' });
+  }
+
+  try {
+    const payload = jwt.verify(token, getJwtSecret());
+
+    if (typeof payload === 'string' || typeof payload.userId !== 'number') {
+      return res.status(401).json({ message: 'Invalid authentication token' });
+    }
+
+    req.userId = payload.userId;
+    return next();
+  } catch {
+    return res.status(401).json({ message: 'Invalid or expired authentication token' });
+  }
+}
 
 function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
