@@ -19,3 +19,13 @@ model User {
   createdAt DateTime @default(now())
   password String
 }
+
+model ContactMessage {
+  id        Int      @id @default(autoincrement())
+  reference String   @unique
+  name      String
+  email     String
+  subject   String
+  message   String
+  createdAt DateTime @default(now())
+}
