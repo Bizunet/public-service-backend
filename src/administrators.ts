@@ -5,6 +5,7 @@ import multer from 'multer';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { requireAdmin, type AuthenticatedRequest } from './auth.js';
+import type { Administrator } from './generated/prisma/client.js';
 
 const router = Router();
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -29,7 +30,7 @@ router.get('/', async (_req: Request, res: Response) => {
       orderBy: [{ isLeader: 'desc' }, { nameEn: 'asc' }],
     });
 
-    const result = await Promise.all(administrators.map(async (administrator) => {
+    const result = await Promise.all(administrators.map(async (administrator: Administrator) => {
       return { ...administrator, photo: await signedPhoto(administrator.imagePath) };
     }));
 
