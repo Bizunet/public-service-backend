@@ -7,9 +7,10 @@ const router = Router();
 
 export interface AuthenticatedRequest extends Request {
   userId?: number;
+  userRole?: 'USER' | 'ADMIN';
 }
 
-export function requireAuth(
+export async function requireAuth(
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction,
@@ -30,11 +31,31 @@ export function requireAuth(
       return res.status(401).json({ message: 'Invalid authentication token' });
     }
 
-    req.userId = payload.userId;
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { id: true, role: true },
+    });
+
+    if (!user) return res.status(401).json({ message: 'User no longer exists' });
+    req.userId = user.id;
+    req.userRole = user.role;
     return next();
   } catch {
     return res.status(401).json({ message: 'Invalid or expired authentication token' });
   }
+}
+
+export function requireAdmin(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) {
+  return requireAuth(req, res, () => {
+    if (req.userRole !== 'ADMIN') {
+      return res.status(403).json({ message: 'Administrator access is required' });
+    }
+    return next();
+  });
 }
 
 function getJwtSecret(): string {
@@ -85,6 +106,7 @@ router.post('/signup', async (req: Request, res: Response) => {
         name: true,
         email: true,
         employeeId: true,
+        role: true,
       },
     });
 
@@ -121,6 +143,7 @@ router.post('/login', async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         employeeId: user.employeeId,
+        role: user.role,
       },
       token: createToken(user.id),
     });
