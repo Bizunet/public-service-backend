@@ -8,7 +8,7 @@ import administratorsRouter from './administrators.js';
 import announcementsRouter from './announcements.js';
 const app = express();
 app.use(cors({
-    origin: 'http://localhost:5173',
+    origin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
 }));
 app.use(express.json());
 app.get('/', (_req, res) => {

@@ -11,7 +11,7 @@ import announcementsRouter from './announcements.js';
 
 const app: Express = express();
 app.use(cors({
-  origin: 'https://hadiya-react-m6vz3d7uz-buzz-s-projects.vercel.app/',
+  origin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
 }));
 app.use(express.json());
 
