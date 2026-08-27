@@ -13,7 +13,13 @@ if (!supabaseUrl || !supabaseServiceRoleKey) {
     throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
 }
 const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
-const allowedMimeTypes = new Set(['application/pdf', 'image/jpeg', 'image/png']);
+const allowedMimeTypes = new Set([
+    'application/pdf',
+    'image/jpeg',
+    'image/png',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+]);
 const upload = multer({
     storage: multer.memoryStorage(),
     fileFilter: (_req, file, callback) => {
@@ -47,7 +53,7 @@ router.post('/', requireAuth, upload.array('files', 10), async (req, res) => {
         !endDate ||
         endDate < startDate ||
         !files?.length) {
-        return res.status(400).json({ message: 'Complete report details and at least one PDF or image are required' });
+        return res.status(400).json({ message: 'Complete report details and at least one PDF, image, or Word document are required' });
     }
     try {
         const reference = createReference();
