@@ -72,6 +72,7 @@ export const ModelName = {
     ContactMessage: 'ContactMessage',
     Administrator: 'Administrator',
     Announcement: 'Announcement',
+    HeroSlide: 'HeroSlide',
     Report: 'Report',
     ReportFile: 'ReportFile'
 };
@@ -125,6 +126,17 @@ export const AnnouncementScalarFieldEnum = {
     body: 'body',
     published: 'published',
     authorId: 'authorId',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+};
+export const HeroSlideScalarFieldEnum = {
+    id: 'id',
+    imagePath: 'imagePath',
+    captionEn: 'captionEn',
+    captionAm: 'captionAm',
+    linkTo: 'linkTo',
+    order: 'order',
+    isActive: 'isActive',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
 };
