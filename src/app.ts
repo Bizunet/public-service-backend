@@ -9,7 +9,7 @@ import administratorsRouter from './administrators.js';
 import announcementsRouter from './announcements.js';
 import statsRouter from './stats.js';
 import slidesRouter from './slides.js';
-
+import { setupSwagger } from './swagger.js';
 
 const app: Express = express();
 app.use(cors({
@@ -20,6 +20,8 @@ app.use(express.json());
 app.get('/', (_req: Request, res: Response) => {
   res.send('Hello World!');
 });
+
+setupSwagger(app);
 
 app.use('/api/auth', authRouter);
 app.use('/api/contact', contactRouter);
