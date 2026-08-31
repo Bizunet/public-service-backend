@@ -72,6 +72,7 @@ export const ContactMessageScalarFieldEnum = {
     email: 'email',
     subject: 'subject',
     message: 'message',
+    isRead: 'isRead',
     createdAt: 'createdAt'
 };
 export const AdministratorScalarFieldEnum = {
@@ -123,6 +124,7 @@ export const ReportScalarFieldEnum = {
     periodEnd: 'periodEnd',
     notes: 'notes',
     userId: 'userId',
+    status: 'status',
     createdAt: 'createdAt'
 };
 export const ReportFileScalarFieldEnum = {

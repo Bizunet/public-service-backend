@@ -8,6 +8,7 @@ import administratorsRouter from './administrators.js';
 import announcementsRouter from './announcements.js';
 import statsRouter from './stats.js';
 import slidesRouter from './slides.js';
+import { setupSwagger } from './swagger.js';
 const app = express();
 app.use(cors({
     origin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
@@ -16,6 +17,7 @@ app.use(express.json());
 app.get('/', (_req, res) => {
     res.send('Hello World!');
 });
+setupSwagger(app);
 app.use('/api/auth', authRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/reports', reportsRouter);

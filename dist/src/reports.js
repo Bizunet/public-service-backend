@@ -4,7 +4,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
 import prisma from './prisma.js';
-import { requireAuth } from './auth.js';
+import { requireAuth, requireAdmin } from './auth.js';
 const router = Router();
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -26,6 +26,40 @@ const upload = multer({
         callback(null, allowedMimeTypes.has(file.mimetype));
     },
     limits: { files: 10, fileSize: 10 * 1024 * 1024 },
+});
+router.get('/admin', requireAdmin, async (_req, res) => {
+    try {
+        const reports = await prisma.report.findMany({ include: { files: true }, orderBy: { createdAt: 'desc' } });
+        return res.json(reports);
+    }
+    catch {
+        return res.status(500).json({ message: 'Unable to load reports' });
+    }
+});
+router.patch('/admin/:id/status', requireAdmin, async (req, res) => {
+    const status = ['Pending', 'Reviewed', 'Approved'].includes(req.body.status) ? req.body.status : null;
+    if (!status)
+        return res.status(400).json({ message: 'Invalid report status' });
+    try {
+        return res.json(await prisma.report.update({ where: { id: Number(req.params.id) }, data: { status } }));
+    }
+    catch {
+        return res.status(404).json({ message: 'Report not found' });
+    }
+});
+router.get('/admin/files/:id/download', requireAdmin, async (req, res) => {
+    try {
+        const file = await prisma.reportFile.findUnique({ where: { id: Number(req.params.id) } });
+        if (!file)
+            return res.status(404).json({ message: 'File not found' });
+        const { data, error } = await supabase.storage.from(storageBucket).createSignedUrl(file.path, 60 * 10);
+        if (error || !data?.signedUrl)
+            return res.status(502).json({ message: 'Unable to prepare download' });
+        return res.json({ url: data.signedUrl, name: file.originalName });
+    }
+    catch {
+        return res.status(500).json({ message: 'Unable to prepare download' });
+    }
 });
 function createReference() {
     const year = new Date().getFullYear();

@@ -35,6 +35,7 @@ model ContactMessage {
   email     String
   subject   String
   message   String
+  isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 }
 
@@ -93,6 +94,7 @@ model Report {
   userId      Int
   user        User         @relation(fields: [userId], references: [id])
   files       ReportFile[]
+  status      String       @default("Pending")
   createdAt   DateTime     @default(now())
 }
 

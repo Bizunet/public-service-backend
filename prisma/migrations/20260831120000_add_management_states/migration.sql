@@ -1,0 +1,3 @@
+ALTER TABLE "Report" ADD COLUMN "status" TEXT NOT NULL DEFAULT 'Pending';
+
+ALTER TABLE "ContactMessage" ADD COLUMN "isRead" BOOLEAN NOT NULL DEFAULT false;

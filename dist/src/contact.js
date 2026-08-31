@@ -1,6 +1,32 @@
 import { Router } from 'express';
 import prisma from './prisma.js';
+import { requireAdmin } from './auth.js';
 const router = Router();
+router.get('/admin', requireAdmin, async (_req, res) => {
+    try {
+        return res.json(await prisma.contactMessage.findMany({ orderBy: { createdAt: 'desc' } }));
+    }
+    catch {
+        return res.status(500).json({ message: 'Unable to load contact messages' });
+    }
+});
+router.patch('/admin/:id/read', requireAdmin, async (req, res) => {
+    try {
+        return res.json(await prisma.contactMessage.update({ where: { id: Number(req.params.id) }, data: { isRead: true } }));
+    }
+    catch {
+        return res.status(404).json({ message: 'Message not found' });
+    }
+});
+router.delete('/admin/:id', requireAdmin, async (req, res) => {
+    try {
+        await prisma.contactMessage.delete({ where: { id: Number(req.params.id) } });
+        return res.status(204).send();
+    }
+    catch {
+        return res.status(404).json({ message: 'Message not found' });
+    }
+});
 function createReference() {
     const year = new Date().getFullYear();
     const randomNumber = Math.floor(10000 + Math.random() * 90000);

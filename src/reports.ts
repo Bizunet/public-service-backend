@@ -4,7 +4,7 @@ import { Router, type Response } from 'express';
 import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
 import prisma from './prisma.js';
-import { requireAuth, type AuthenticatedRequest } from './auth.js';
+import { requireAuth, requireAdmin, type AuthenticatedRequest } from './auth.js';
 
 const router = Router();
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -31,6 +31,56 @@ const upload = multer({
     callback(null, allowedMimeTypes.has(file.mimetype));
   },
   limits: { files: 10, fileSize: 10 * 1024 * 1024 },
+});
+
+router.get('/admin', requireAdmin, async (_req, res) => {
+  try {
+    const reports = await prisma.report.findMany({ include: { files: true }, orderBy: { createdAt: 'desc' } });
+    return res.json(reports);
+  } catch { return res.status(500).json({ message: 'Unable to load reports' }); }
+});
+
+router.patch('/admin/:id/status', requireAdmin, async (req, res) => {
+  const status = ['Pending', 'Reviewed', 'Approved'].includes(req.body.status) ? req.body.status : null;
+  if (!status) return res.status(400).json({ message: 'Invalid report status' });
+  try { return res.json(await prisma.report.update({ where: { id: Number(req.params.id) }, data: { status } })); }
+  catch { return res.status(404).json({ message: 'Report not found' }); }
+});
+
+router.get('/admin/files/:id/download', requireAdmin, async (req, res) => {
+  const fileId = Number(req.params.id);
+
+  if (!Number.isInteger(fileId)) {
+    return res.status(400).json({ message: 'Invalid file id' });
+  }
+
+  try {
+    const file = await prisma.reportFile.findUnique({ where: { id: fileId } });
+    if (!file) return res.status(404).json({ message: 'File not found' });
+
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from(storageBucket)
+      .createSignedUrl(file.path, 60 * 10);
+
+    if (!signedError && signedData?.signedUrl) {
+      return res.json({ url: signedData.signedUrl, name: file.originalName });
+    }
+
+    const { data: fileData, error: fileError } = await supabase.storage
+      .from(storageBucket)
+      .download(file.path);
+
+    if (fileError || !fileData) {
+      return res.status(502).json({ message: 'Unable to prepare download' });
+    }
+
+    const buffer = Buffer.from(await fileData.arrayBuffer());
+    res.setHeader('Content-Type', file.mimeType || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${file.originalName.replace(/"/g, '')}"`);
+    return res.send(buffer);
+  } catch {
+    return res.status(500).json({ message: 'Unable to prepare download' });
+  }
 });
 
 function createReference(): string {
