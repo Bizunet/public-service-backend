@@ -48,14 +48,31 @@ router.patch('/admin/:id/status', requireAdmin, async (req, res) => {
     }
 });
 router.get('/admin/files/:id/download', requireAdmin, async (req, res) => {
+    const fileId = Number(req.params.id);
+    if (!Number.isInteger(fileId)) {
+        return res.status(400).json({ message: 'Invalid file id' });
+    }
     try {
-        const file = await prisma.reportFile.findUnique({ where: { id: Number(req.params.id) } });
+        const file = await prisma.reportFile.findUnique({ where: { id: fileId } });
         if (!file)
             return res.status(404).json({ message: 'File not found' });
-        const { data, error } = await supabase.storage.from(storageBucket).createSignedUrl(file.path, 60 * 10);
-        if (error || !data?.signedUrl)
-            return res.status(502).json({ message: 'Unable to prepare download' });
-        return res.json({ url: data.signedUrl, name: file.originalName });
+        const { data: fileData, error: fileError } = await supabase.storage
+            .from(storageBucket)
+            .download(file.path);
+        if (!fileError && fileData) {
+            const buffer = Buffer.from(await fileData.arrayBuffer());
+            res.setHeader('Content-Type', file.mimeType || fileData.type || 'application/octet-stream');
+            res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(file.originalName)}"`);
+            res.setHeader('Content-Length', buffer.length);
+            return res.send(buffer);
+        }
+        const { data: signedData, error: signedError } = await supabase.storage
+            .from(storageBucket)
+            .createSignedUrl(file.path, 60 * 10);
+        if (!signedError && signedData?.signedUrl) {
+            return res.json({ url: signedData.signedUrl, name: file.originalName });
+        }
+        return res.status(502).json({ message: fileError?.message || signedError?.message || 'Unable to prepare download' });
     }
     catch {
         return res.status(500).json({ message: 'Unable to prepare download' });

@@ -14,6 +14,7 @@ import { setupSwagger } from './swagger.js';
 const app: Express = express();
 app.use(cors({
   origin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
+  exposedHeaders: ['Content-Disposition'],
 }));
 app.use(express.json());
 
