@@ -47,6 +47,32 @@ router.patch('/admin/:id/status', requireAdmin, async (req, res) => {
   catch { return res.status(404).json({ message: 'Report not found' }); }
 });
 
+router.delete('/admin/:id', requireAdmin, async (req, res) => {
+  const reportId = Number(req.params.id);
+
+  if (!Number.isInteger(reportId)) {
+    return res.status(400).json({ message: 'Invalid report id' });
+  }
+
+  try {
+    const report = await prisma.report.findUnique({ where: { id: reportId }, include: { files: true } });
+    if (!report) return res.status(404).json({ message: 'Report not found' });
+
+    const storagePaths = report.files.map((file) => file.path).filter(Boolean);
+    if (storagePaths.length) {
+      const { error } = await supabase.storage.from(storageBucket).remove(storagePaths);
+      if (error) {
+        return res.status(502).json({ message: 'Unable to delete report files from storage' });
+      }
+    }
+
+    await prisma.report.delete({ where: { id: reportId } });
+    return res.json({ message: 'Report deleted successfully' });
+  } catch {
+    return res.status(500).json({ message: 'Unable to delete report' });
+  }
+});
+
 router.get('/admin/files/:id/download', requireAdmin, async (req, res) => {
   const fileId = Number(req.params.id);
 
