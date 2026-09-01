@@ -25,6 +25,17 @@ const allowedMimeTypes = new Set([
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ]);
 
+export function isMissingStoragePathError(error?: { message?: string } | null): boolean {
+  const message = error?.message?.toLowerCase() ?? '';
+
+  return [
+    'the resource was not found',
+    'the object does not exist',
+    'not found',
+    'does not exist',
+  ].some((needle) => message.includes(needle));
+}
+
 const upload = multer({
   storage: multer.memoryStorage(),
   fileFilter: (_req, file, callback) => {
@@ -61,7 +72,7 @@ router.delete('/admin/:id', requireAdmin, async (req, res) => {
     const storagePaths = report.files.map((file) => file.path).filter(Boolean);
     if (storagePaths.length) {
       const { error } = await supabase.storage.from(storageBucket).remove(storagePaths);
-      if (error) {
+      if (error && !isMissingStoragePathError(error)) {
         return res.status(502).json({ message: 'Unable to delete report files from storage' });
       }
     }
